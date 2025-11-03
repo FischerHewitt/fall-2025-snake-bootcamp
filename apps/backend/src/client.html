@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Snake Socket Test</title>
+  </head>
+  <body>
+    <h1>Snake Socket Test</h1>
+    <p>Open DevTools console. Press arrow keys to steer. [S]=start, [P]=pause, [R]=resume, [X]=stop.</p>
+
+    <!-- socket.io client -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+    <script>
+    console.log("[browser] script loaded", new Date().toISOString());
+    console.log("[browser] io exists:", typeof window.io === "function");
+
+    const URL = "http://localhost:8000";
+    const sio = io(URL, { transports: ["websocket"], forceNew: true });
+
+    sio.on("connect", () => {
+        console.log("[browser] connected", sio.id);
+        sio.emit("start_game", { tick_ms: 80 });
+    });
+
+    // 🔎 debug hooks
+    sio.on("connect_error", (err) => console.error("[browser] connect_error", err));
+    sio.on("reconnect_error", (err) => console.error("[browser] reconnect_error", err));
+    sio.on("error", (err) => console.error("[browser] error", err));
+    sio.on("disconnect", (reason) => console.warn("[browser] disconnect", reason));
+
+    // normal logs
+    sio.on("server_ready", (d) => console.log("[browser] server_ready", d));
+    sio.on("game_started", (d) => console.log("[browser] game_started", d));
+    sio.on("game_state", (s) => console.log("[browser] game_state", s));
+    sio.on("game_over", (s) => console.log("[browser] game_over", s));
+    sio.on("grid_set", (d) => console.log("[browser] grid_set", d));
+    sio.on("speed_set", (d) => console.log("[browser] speed_set", d));
+    sio.on("paused", (d) => console.log("[browser] paused", d));
+    sio.on("stats", (d) => console.log("[browser] stats", d));
+
+    // key controls
+    const KEY_TO_DIR = { ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT" };
+    window.addEventListener("keydown", (e) => {
+     if (KEY_TO_DIR[e.key]) {
+        sio.emit("change_direction", { direction: KEY_TO_DIR[e.key] });
+        } else if (e.key.toLowerCase() === "s") {
+        sio.emit("start_game", { tick_ms: 80 });
+        } else if (e.key.toLowerCase() === "p") {
+        sio.emit("pause_game");
+        } else if (e.key.toLowerCase() === "r") {
+        sio.emit("resume_game");
+        } else if (e.key.toLowerCase() === "x") {
+        sio.emit("stop_game");
+        }
+    });
+    </script>
+
+  </body>
+</html>
